@@ -4,10 +4,10 @@ from geopandas.array import from_shapely
 from hypothesis import HealthCheck, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
-from scipy.spatial.qhull import Voronoi
+from scipy.spatial import Voronoi
 from shapely import geometry as sg
 from shapely.affinity import scale, translate
-from shapely.ops import cascaded_union, polygonize
+from shapely.ops import unary_union, polygonize
 
 hyp_settings = settings(
     deadline=None,
@@ -16,8 +16,8 @@ hyp_settings = settings(
 )
 
 coord = st.floats(
-    allow_infinity=False, allow_nan=False, max_value=1000, min_value=-1000
-)
+    allow_infinity=False, allow_nan=False, max_value=1000, min_value=-1000,
+).map(lambda x: round(x, 15))
 
 st_points = arrays(
     elements=st.floats(
@@ -156,7 +156,7 @@ def st_polygon(draw, n=10, num_holes=None, xmid=0, ymid=0):
             vor.vertices[s] for s in vor.ridge_vertices if all(np.array(s) >= 0)
         ])
 
-        poly = cascaded_union(list(polygonize(mls)))
+        poly = unary_union(list(polygonize(mls)))
         poly = poly.intersection(sg.box(-50, -50, 50, 50))
         if isinstance(poly, sg.Polygon) and not poly.is_empty:
             break
@@ -178,9 +178,9 @@ def st_polygon(draw, n=10, num_holes=None, xmid=0, ymid=0):
         ])
         hole_components = [p for p in polygonize(mls) if poly.contains(p)]
         if hole_components:
-            hole = cascaded_union([p for p in polygonize(mls) if poly.contains(p)])
+            hole = unary_union([p for p in polygonize(mls) if poly.contains(p)])
             if isinstance(hole, sg.MultiPolygon):
-                hole = hole[0]
+                hole = hole.geoms[0]
 
             new_poly = poly.difference(hole)
             if isinstance(new_poly, sg.Polygon):

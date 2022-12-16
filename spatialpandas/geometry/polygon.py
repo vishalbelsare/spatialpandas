@@ -38,12 +38,12 @@ class Polygon(GeometryList):
         import shapely.geometry as sg
         if isinstance(shape, sg.Polygon):
             if shape.exterior is not None:
-                exterior = np.asarray(shape.exterior.ctypes)
+                exterior = np.asarray(shape.exterior.coords).ravel()
                 polygon_coords = [exterior]
             else:
                 polygon_coords = [np.array([])]
             for ring in shape.interiors:
-                interior = np.asarray(ring.ctypes)
+                interior = np.asarray(ring.coords).ravel()
                 polygon_coords.append(interior)
 
             return polygon_coords
@@ -61,7 +61,7 @@ Received invalid value of type {typ}. Must be an instance of Polygon
         """
         import shapely.geometry as sg
         ring_arrays = [np.asarray(line_coords).reshape(len(line_coords) // 2, 2)
-                       for line_coords in np.asarray(self.data.as_py())]
+                       for line_coords in self.data.as_py()]
         rings = [sg.LinearRing(ring_array) for ring_array in ring_arrays]
         return sg.Polygon(shell=rings[0], holes=rings[1:])
 
